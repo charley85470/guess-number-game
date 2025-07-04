@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>猜數字遊戲</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 40px; }
+        .game-container {
+            display: flex;
+            gap: 40px;
+        }
+        .game-area {
+            flex: 1;
+        }
+        .scoreboard {
+            width: 300px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .input-group { display: flex; gap: 10px; margin: 20px 0; }
+        input[type="text"] {
+            width: 40px;
+            height: 40px;
+            font-size: 2rem;
+            text-align: center;
+        }
+        button { font-size: 1.2rem; padding: 8px 20px; margin-right: 10px; }
+        #result { margin-top: 20px; font-size: 1.5rem; color: #007bff; }
+        .button-group { display: flex; gap: 10px; }
+        #history {
+            margin-top: 30px;
+            border-top: 2px solid #eee;
+            padding-top: 20px;
+        }
+        #history h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        #history-list {
+            list-style: none;
+            padding: 0;
+        }
+        #history-list li {
+            padding: 8px;
+            margin-bottom: 8px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            font-size: 1.1rem;
+        }
+        #history-list li:nth-child(odd) {
+            background-color: #e9ecef;
+        }
+        .difficulty-group {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .difficulty-group label {
+            margin-right: 20px;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+        .difficulty-group input[type="radio"] {
+            margin-right: 5px;
+        }
+        #timer {
+            font-size: 1.5rem;
+            color: #28a745;
+            margin: 10px 0;
+        }
+        .tab-buttons {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .tab-button {
+            padding: 8px 15px;
+            border: none;
+            background-color: #e9ecef;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .tab-button.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .score-list {
+            list-style: none;
+            padding: 0;
+        }
+        .score-list li {
+            padding: 8px;
+            margin-bottom: 5px;
+            background-color: white;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .clear-scores {
+            width: 100%;
+            padding: 8px;
+            margin-top: 15px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .clear-scores:hover {
+            background-color: #c82333;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .modal input {
+            width: 200px;
+            padding: 8px;
+            margin: 10px 0;
+            font-size: 1rem;
+        }
+        #fireworksCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: auto;
+            z-index: 9999;
+            cursor: pointer;
+            display: none; /* 預設隱藏 */
+        }
+        .fireworks-active {
+            background: rgba(0, 0, 0, 0.3); /* 半透明背景只在active時顯示 */
+        }
+    </style>
+</head>
+<body>
+    <canvas id="fireworksCanvas"></canvas>
+    <div class="game-container">
+        <div class="game-area">
+            <h1>猜數字遊戲</h1>
+            <div id="timer">00:00</div>
+            <div class="difficulty-group">
+                <h3>選擇難度：</h3>
+                <label>
+                    <input type="radio" name="difficulty" value="easy"> 低難度 (3位數)
+                </label>
+                <label>
+                    <input type="radio" name="difficulty" value="medium"> 中難度 (4位數)
+                </label>
+                <label>
+                    <input type="radio" name="difficulty" value="hard"> 高難度 (5位數)
+                </label>
+            </div>
+            <div class="button-group">
+                <button id="startBtn" disabled>開始遊戲</button>
+                <button id="endBtn" disabled>結束遊戲</button>
+            </div>
+            <div class="input-group" id="inputContainer">
+            </div>
+            <button id="submitBtn" disabled>答題</button>
+            <div id="result"></div>
+            <div id="history">
+                <h2>歷史紀錄</h2>
+                <ul id="history-list"></ul>
+            </div>
+        </div>
+        <div class="scoreboard">
+            <h2>計分板</h2>
+            <div class="tab-buttons">
+                <button class="tab-button active" data-difficulty="easy">低難度</button>
+                <button class="tab-button" data-difficulty="medium">中難度</button>
+                <button class="tab-button" data-difficulty="hard">高難度</button>
+            </div>
+            <div id="scoreContainer"></div>
+            <button class="clear-scores" id="clearScoresBtn">清除目前難度的記錄</button>
+        </div>
+    </div>
+
+    <div id="nicknameModal" class="modal">
+        <div class="modal-content">
+            <h3>恭喜完成！</h3>
+            <p>請輸入您的暱稱：</p>
+            <input type="text" id="nicknameInput" maxlength="20">
+            <button id="submitNickname">確定</button>
+        </div>
+    </div>
+
+    <script>
+        // 煙火特效相關代碼
+        const canvas = document.getElementById('fireworksCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // 設置 Canvas 大小
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // 添加點擊關閉功能
+        canvas.addEventListener('click', function() {
+            if (fireworksInterval) {
+                clearInterval(fireworksInterval);
+                fireworksInterval = null;
+            }
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            particles = [];
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            canvas.classList.remove('fireworks-active'); // 移除active類別
+            canvas.style.display = 'none';
+        });
+
+        // 煙火粒子類
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.velocity = {
+                    x: (Math.random() - 0.5) * 8,
+                    y: (Math.random() - 0.5) * 8
+                };
+                this.alpha = 1;
+                this.friction = 0.95;
+                this.gravity = 0.2;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            update() {
+                this.velocity.x *= this.friction;
+                this.velocity.y *= this.friction;
+                this.velocity.y += this.gravity;
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.alpha -= 0.005;
+            }
+        }
+
+        let particles = [];
+        let fireworksInterval;
+        let animationId;
+
+        function createFirework(x, y) {
+            const colors = ['#ff0000', '#ffa500', '#ffff00', '#00ff00', '#0000ff', '#4b0082', '#ee82ee'];
+            const particleCount = 150;
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle(x, y, colors[Math.floor(Math.random() * colors.length)]));
+            }
+        }
+
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+            
+            // 使用 globalCompositeOperation 來保持背景透明
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.globalCompositeOperation = 'source-over';
+
+            particles = particles.filter(particle => particle.alpha > 0);
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+
+            if (particles.length === 0 && !fireworksInterval) {
+                cancelAnimationFrame(animationId);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                canvas.style.display = 'none';
+            }
+        }
+
+        function startFireworks() {
+            if (animationId) cancelAnimationFrame(animationId);
+            if (fireworksInterval) clearInterval(fireworksInterval);
+            
+            canvas.style.display = 'block';
+            canvas.classList.add('fireworks-active'); // 添加active類別
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles = [];
+            
+            fireworksInterval = setInterval(() => {
+                createFirework(
+                    Math.random() * (canvas.width * 0.8) + (canvas.width * 0.1),
+                    canvas.height * 0.5
+                );
+            }, 300);
+
+            animate();
+
+            setTimeout(() => {
+                clearInterval(fireworksInterval);
+                fireworksInterval = null;
+            }, 3000);
+        }
+
+        // 原有的遊戲代碼
+        let answer = '';
+        let guessHistory = [];
+        let currentDigits = 4;
+        let startTime = null;
+        let timerInterval = null;
+        let currentDifficulty = '';
+        
+        const scoreboards = JSON.parse(localStorage.getItem('scoreboards')) || {
+            easy: [],
+            medium: [],
+            hard: []
+        };
+
+        const startBtn = document.getElementById('startBtn');
+        const endBtn = document.getElementById('endBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const resultDiv = document.getElementById('result');
+        const historyList = document.getElementById('history-list');
+        const inputContainer = document.getElementById('inputContainer');
+        const difficultyInputs = document.querySelectorAll('input[name="difficulty"]');
+        const timerDisplay = document.getElementById('timer');
+        const modal = document.getElementById('nicknameModal');
+        const nicknameInput = document.getElementById('nicknameInput');
+        const submitNicknameBtn = document.getElementById('submitNickname');
+
+        function updateTimer() {
+            if (!startTime) return;
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            timerDisplay.textContent = `${minutes}:${seconds}`;
+        }
+
+        function createInputs(count) {
+            inputContainer.innerHTML = '';
+            const inputs = [];
+            for (let i = 0; i < count; i++) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.maxLength = 1;
+                input.id = `num${i}`;
+                input.disabled = true;
+                inputContainer.appendChild(input);
+                inputs.push(input);
+            }
+            return inputs;
+        }
+
+        let inputs = createInputs(4);
+
+        function generateAnswer(digits) {
+            let numbers = [];
+            while (numbers.length < digits) {
+                let d = Math.floor(Math.random() * 9 + 1).toString(); // 1-9
+                if (!numbers.includes(d)) numbers.push(d);
+            }
+            return numbers.join('');
+        }
+
+        function updateHistoryList() {
+            historyList.innerHTML = guessHistory.map(guess => 
+                `<li>猜測：${guess.number} → ${guess.result}</li>`
+            ).join('');
+        }
+
+        function updateScoreboard(difficulty) {
+            const container = document.getElementById('scoreContainer');
+            const scores = scoreboards[difficulty].slice(0, 10);
+            if (scores.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666;">尚無記錄</p>';
+            } else {
+                container.innerHTML = `
+                    <ul class="score-list">
+                        ${scores.map((score, index) => `
+                            <li>${index + 1}. ${score.nickname} - ${score.time}</li>
+                        `).join('')}
+                    </ul>
+                `;
+            }
+        }
+
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', function() {
+                document.querySelectorAll('.tab-button').forEach(btn => 
+                    btn.classList.remove('active'));
+                this.classList.add('active');
+                updateScoreboard(this.dataset.difficulty);
+            });
+        });
+
+        difficultyInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                startBtn.disabled = false;
+                currentDifficulty = this.value;
+                switch(currentDifficulty) {
+                    case 'easy':
+                        currentDigits = 3;
+                        break;
+                    case 'medium':
+                        currentDigits = 4;
+                        break;
+                    case 'hard':
+                        currentDigits = 5;
+                        break;
+                }
+                inputs = createInputs(currentDigits);
+                setupInputListeners();
+            });
+        });
+
+        function setupInputListeners() {
+            inputs.forEach((input, idx) => {
+                input.addEventListener('input', function(e) {
+                    let val = input.value.replace(/[^0-9]/g, '');
+                    input.value = val;
+                    if (val && idx < inputs.length - 1) {
+                        inputs[idx + 1].focus();
+                    }
+                });
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Backspace' && !input.value && idx > 0) {
+                        inputs[idx - 1].focus();
+                    }
+                });
+            });
+        }
+
+        startBtn.onclick = function() {
+            answer = generateAnswer(currentDigits);
+            inputs.forEach(input => {
+                input.value = '';
+                input.disabled = false;
+            });
+            inputs[0].focus();
+            submitBtn.disabled = false;
+            endBtn.disabled = false;
+            resultDiv.textContent = '';
+            guessHistory = [];
+            updateHistoryList();
+            difficultyInputs.forEach(input => input.disabled = true);
+            
+            startTime = Date.now();
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+        };
+
+        endBtn.onclick = function() {
+            resultDiv.textContent = `遊戲結束！答案是：${answer}`;
+            inputs.forEach(input => input.disabled = true);
+            submitBtn.disabled = true;
+            endBtn.disabled = true;
+            difficultyInputs.forEach(input => input.disabled = false);
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            startTime = null;
+            timerDisplay.textContent = '00:00';
+        };
+
+        submitNicknameBtn.onclick = function() {
+            const nickname = nicknameInput.value.trim() || '匿名玩家';
+            const timeSpent = timerDisplay.textContent;
+            
+            scoreboards[currentDifficulty].push({
+                nickname: nickname,
+                time: timeSpent
+            });
+            
+            scoreboards[currentDifficulty].sort((a, b) => {
+                const [aMin, aSec] = a.time.split(':').map(Number);
+                const [bMin, bSec] = b.time.split(':').map(Number);
+                return (aMin * 60 + aSec) - (bMin * 60 + bSec);
+            });
+            
+            localStorage.setItem('scoreboards', JSON.stringify(scoreboards));
+            
+            updateScoreboard(currentDifficulty);
+            modal.style.display = 'none';
+            
+            difficultyInputs.forEach(input => input.disabled = false);
+            nicknameInput.value = '';
+        };
+
+        submitBtn.onclick = function() {
+            let guess = inputs.map(input => input.value).join('');
+            if (guess.length !== currentDigits) {
+                resultDiv.textContent = `請輸入${currentDigits}位數字`;
+                return;
+            }
+            let a = 0, b = 0;
+            for (let i = 0; i < currentDigits; i++) {
+                if (guess[i] === answer[i]) {
+                    a++;
+                } else if (answer.includes(guess[i])) {
+                    b++;
+                }
+            }
+            const result = `${a}A${b}B`;
+            resultDiv.textContent = result;
+            
+            guessHistory.unshift({
+                number: guess,
+                result: result
+            });
+            updateHistoryList();
+
+            inputs.forEach(input => {
+                input.value = '';
+            });
+            inputs[0].focus();
+
+            if (a === currentDigits) {
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                inputs.forEach(input => input.disabled = true);
+                submitBtn.disabled = true;
+                endBtn.disabled = true;
+                resultDiv.textContent = '恭喜你答對了！';
+                
+                setTimeout(() => {
+                    startFireworks();
+                    modal.style.display = 'block';
+                }, 100);
+            }
+        };
+
+        setupInputListeners();
+        updateScoreboard('easy');
+
+        // 清除計分板按鈕功能
+        const clearScoresBtn = document.getElementById('clearScoresBtn');
+        clearScoresBtn.addEventListener('click', function() {
+            if (confirm('確定要清除目前難度的所有記錄嗎？')) {
+                // 找出目前選中的難度
+                const activeTab = document.querySelector('.tab-button.active');
+                const currentDifficulty = activeTab.dataset.difficulty;
+                
+                // 清除該難度的記錄
+                scoreboards[currentDifficulty] = [];
+                
+                // 更新 localStorage
+                localStorage.setItem('scoreboards', JSON.stringify(scoreboards));
+                
+                // 更新顯示
+                updateScoreboard(currentDifficulty);
+            }
+        });
+    </script>
+</body>
+</html> 
