@@ -53,8 +53,8 @@
             position: fixed;
             top: 20px;
             right: 20px;
-            background: var(--button-bg);
-            color: var(--button-text);
+            background: white;
+            color: #333333;
             border: none;
             border-radius: 50px;
             padding: 10px 15px;
@@ -68,6 +68,12 @@
         .theme-toggle:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        /* 深色主題時，切換按鈕為黑色背景 */
+        [data-theme="dark"] .theme-toggle {
+            background: black;
+            color: #e0e0e0;
         }
 
         .game-container {
