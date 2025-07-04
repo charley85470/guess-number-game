@@ -5,7 +5,71 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>猜數字遊戲</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 40px; }
+        /* 預設淺色主題 */
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --container-bg: #f8f9fa;
+            --input-bg: #ffffff;
+            --input-border: #ccc;
+            --border-color: #eee;
+            --card-bg: #ffffff;
+            --button-bg: #007bff;
+            --button-text: #ffffff;
+            --secondary-bg: #e9ecef;
+            --hover-bg: #f8f9fa;
+            --timer-color: #28a745;
+            --modal-bg: #ffffff;
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        /* 深色主題 */
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --container-bg: #2d2d2d;
+            --input-bg: #3a3a3a;
+            --input-border: #555;
+            --border-color: #444;
+            --card-bg: #2d2d2d;
+            --button-bg: #0d6efd;
+            --button-text: #ffffff;
+            --secondary-bg: #3a3a3a;
+            --hover-bg: #404040;
+            --timer-color: #20c997;
+            --modal-bg: #2d2d2d;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 40px; 
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            border-radius: 50px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 1rem;
+            box-shadow: 0 2px 8px var(--shadow);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
         .game-container {
             display: flex;
             gap: 40px;
@@ -16,8 +80,10 @@
         .scoreboard {
             width: 300px;
             padding: 20px;
-            background-color: #f8f9fa;
+            background-color: var(--container-bg);
             border-radius: 8px;
+            box-shadow: 0 2px 8px var(--shadow);
+            transition: background-color 0.3s ease;
         }
         .input-group { display: flex; gap: 10px; margin: 20px 0; }
         input[type="text"] {
@@ -25,17 +91,49 @@
             height: 40px;
             font-size: 2rem;
             text-align: center;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border: 2px solid var(--input-border);
+            border-radius: 4px;
+            transition: all 0.3s ease;
         }
-        button { font-size: 1.2rem; padding: 8px 20px; margin-right: 10px; }
-        #result { margin-top: 20px; font-size: 1.5rem; color: #007bff; }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--button-bg);
+            box-shadow: 0 0 5px rgba(13, 110, 253, 0.3);
+        }
+        button { 
+            font-size: 1.2rem; 
+            padding: 8px 20px; 
+            margin-right: 10px; 
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        #result { 
+            margin-top: 20px; 
+            font-size: 1.5rem; 
+            color: var(--button-bg); 
+        }
         .button-group { display: flex; gap: 10px; }
         #history {
             margin-top: 30px;
-            border-top: 2px solid #eee;
+            border-top: 2px solid var(--border-color);
             padding-top: 20px;
         }
         #history h2 {
-            color: #333;
+            color: var(--text-color);
             margin-bottom: 15px;
         }
         #history-list {
@@ -45,31 +143,51 @@
         #history-list li {
             padding: 8px;
             margin-bottom: 8px;
-            background-color: #f8f9fa;
+            background-color: var(--container-bg);
             border-radius: 4px;
             font-size: 1.1rem;
+            transition: background-color 0.3s ease;
         }
         #history-list li:nth-child(odd) {
-            background-color: #e9ecef;
+            background-color: var(--secondary-bg);
+        }
+        #history-list li.correct-answer {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            font-weight: bold;
+            border: 2px solid #20c997;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+        [data-theme="dark"] #history-list li.correct-answer {
+            background: linear-gradient(135deg, #20c997, #17a2b8);
+            border-color: #17a2b8;
+            box-shadow: 0 2px 8px rgba(32, 201, 151, 0.4);
         }
         .difficulty-group {
             margin: 20px 0;
             padding: 15px;
-            background-color: #f8f9fa;
+            background-color: var(--container-bg);
             border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+        .difficulty-group h3 {
+            color: var(--text-color);
+            margin-bottom: 10px;
         }
         .difficulty-group label {
             margin-right: 20px;
             font-size: 1.1rem;
             cursor: pointer;
+            color: var(--text-color);
         }
         .difficulty-group input[type="radio"] {
             margin-right: 5px;
         }
         #timer {
             font-size: 1.5rem;
-            color: #28a745;
+            color: var(--timer-color);
             margin: 10px 0;
+            font-weight: bold;
         }
         .tab-buttons {
             display: flex;
@@ -79,13 +197,22 @@
         .tab-button {
             padding: 8px 15px;
             border: none;
-            background-color: #e9ecef;
+            background-color: var(--secondary-bg);
+            color: var(--text-color);
             cursor: pointer;
             border-radius: 4px;
+            transition: all 0.3s ease;
         }
         .tab-button.active {
-            background-color: #007bff;
-            color: white;
+            background-color: var(--button-bg);
+            color: var(--button-text);
+        }
+        .tab-button:hover:not(.active) {
+            background-color: var(--hover-bg);
+        }
+        .scoreboard h2 {
+            color: var(--text-color);
+            margin-bottom: 15px;
         }
         .score-list {
             list-style: none;
@@ -94,9 +221,12 @@
         .score-list li {
             padding: 8px;
             margin-bottom: 5px;
-            background-color: white;
+            background-color: var(--card-bg);
             border-radius: 4px;
             font-size: 0.9rem;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
         }
         .clear-scores {
             width: 100%;
@@ -108,9 +238,11 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 1rem;
+            transition: all 0.3s ease;
         }
         .clear-scores:hover {
             background-color: #c82333;
+            transform: translateY(-1px);
         }
         .modal {
             display: none;
@@ -126,16 +258,32 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: white;
+            background-color: var(--modal-bg);
+            color: var(--text-color);
             padding: 20px;
             border-radius: 8px;
             text-align: center;
+            box-shadow: 0 4px 20px var(--shadow);
+            transition: all 0.3s ease;
         }
         .modal input {
             width: 200px;
             padding: 8px;
             margin: 10px 0;
             font-size: 1rem;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border: 2px solid var(--input-border);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        .modal input:focus {
+            outline: none;
+            border-color: var(--button-bg);
+        }
+        .modal h3 {
+            color: var(--text-color);
+            margin-bottom: 15px;
         }
         #fireworksCanvas {
             position: fixed;
@@ -151,9 +299,68 @@
         .fireworks-active {
             background: rgba(0, 0, 0, 0.3); /* 半透明背景只在active時顯示 */
         }
+
+        /* 深色主題下的特殊樣式 */
+        [data-theme="dark"] .modal {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        [data-theme="dark"] .fireworks-active {
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        /* 滾動條樣式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--container-bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--secondary-bg);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--input-border);
+        }
+
+        /* 無記錄時的提示文字 */
+        .no-records {
+            text-align: center;
+            color: var(--text-color);
+            opacity: 0.6;
+            font-style: italic;
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            .game-container {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .scoreboard {
+                width: 100%;
+            }
+            
+            body {
+                padding: 20px;
+            }
+            
+            .theme-toggle {
+                top: 10px;
+                right: 10px;
+                padding: 8px 12px;
+                font-size: 0.9rem;
+            }
+        }
     </style>
 </head>
 <body>
+    <button class="theme-toggle" id="themeToggle">🌙</button>
     <canvas id="fireworksCanvas"></canvas>
     <div class="game-container">
         <div class="game-area">
@@ -165,7 +372,7 @@
                     <input type="radio" name="difficulty" value="easy"> 低難度 (3位數)
                 </label>
                 <label>
-                    <input type="radio" name="difficulty" value="medium"> 中難度 (4位數)
+                    <input type="radio" name="difficulty" value="medium" checked> 中難度 (4位數)
                 </label>
                 <label>
                     <input type="radio" name="difficulty" value="hard"> 高難度 (5位數)
@@ -206,6 +413,57 @@
     </div>
 
     <script>
+        // 主題切換功能
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        
+        // 檢測系統主題偏好
+        const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+        
+        // 從 localStorage 讀取儲存的主題，如果沒有則依據系統設定
+        let currentTheme = localStorage.getItem('theme');
+        if (!currentTheme) {
+            currentTheme = prefersDarkScheme.matches ? 'dark' : 'light';
+        }
+        
+        // 設定初始主題
+        if (currentTheme === 'dark') {
+            body.setAttribute('data-theme', 'dark');
+            themeToggle.textContent = '☀️';
+        } else {
+            body.removeAttribute('data-theme');
+            themeToggle.textContent = '🌙';
+        }
+        
+        // 監聽系統主題變化（當用戶改變系統設定時）
+        prefersDarkScheme.addEventListener('change', function(e) {
+            // 只有在用戶沒有手動設定過主題時才跟隨系統
+            if (!localStorage.getItem('theme')) {
+                if (e.matches) {
+                    body.setAttribute('data-theme', 'dark');
+                    themeToggle.textContent = '☀️';
+                } else {
+                    body.removeAttribute('data-theme');
+                    themeToggle.textContent = '🌙';
+                }
+            }
+        });
+        
+        // 主題切換事件
+        themeToggle.addEventListener('click', function() {
+            const isDark = body.getAttribute('data-theme') === 'dark';
+            
+            if (isDark) {
+                body.removeAttribute('data-theme');
+                themeToggle.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                themeToggle.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+
         // 煙火特效相關代碼
         const canvas = document.getElementById('fireworksCanvas');
         const ctx = canvas.getContext('2d');
@@ -333,7 +591,7 @@
         let currentDigits = 4;
         let startTime = null;
         let timerInterval = null;
-        let currentDifficulty = '';
+        let currentDifficulty = 'medium'; // 預設中等難度
         
         const scoreboards = JSON.parse(localStorage.getItem('scoreboards')) || {
             easy: [],
@@ -389,7 +647,7 @@
 
         function updateHistoryList() {
             historyList.innerHTML = guessHistory.map(guess => 
-                `<li>猜測：${guess.number} → ${guess.result}</li>`
+                `<li${guess.isCorrect ? ' class="correct-answer"' : ''}>猜測：${guess.number} → ${guess.result}${guess.isCorrect ? ' 🎯' : ''}</li>`
             ).join('');
         }
 
@@ -397,7 +655,7 @@
             const container = document.getElementById('scoreContainer');
             const scores = scoreboards[difficulty].slice(0, 10);
             if (scores.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #666;">尚無記錄</p>';
+                container.innerHTML = '<p class="no-records">尚無記錄</p>';
             } else {
                 container.innerHTML = `
                     <ul class="score-list">
@@ -531,7 +789,8 @@
             
             guessHistory.unshift({
                 number: guess,
-                result: result
+                result: result,
+                isCorrect: a === currentDigits
             });
             updateHistoryList();
 
@@ -559,6 +818,9 @@
 
         setupInputListeners();
         updateScoreboard('easy');
+
+        // 由於預設選中中等難度，啟用開始按鈕
+        startBtn.disabled = false;
 
         // 清除計分板按鈕功能
         const clearScoresBtn = document.getElementById('clearScoresBtn');
